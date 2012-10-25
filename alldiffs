@@ -1,0 +1,8 @@
+#!/usr/bin/sh
+
+for i in HW*;do
+	defolderize $i;
+	cleanup $i;
+	finddiffs $i;
+	folderize $i;
+done

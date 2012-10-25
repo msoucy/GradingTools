@@ -1,0 +1,39 @@
+#!/usr/bin/sh
+
+DEBUG=false
+
+# Make sure we have a valid directory
+if [[ ! -d $1 ]]; then
+	echo "$0 requires a valid directory" 1>&2
+	exit 1
+fi
+
+if which egrep >& /dev/null;
+then GREP=egrep
+else GREP=grep -E
+fi
+
+NAMERE="(\w|\s)+?,\s+?\w+?"
+FILERE="$NAMERE\s+?\-\s+?"
+
+# Enter the working directory
+pushd "$1"
+
+shopt -s nullglob
+for f in *; do
+	if [ "$f" == "index.html" ] || [ "$f" == "try" ]; then
+		continue
+	fi
+	folder=`echo "$f"|$GREP -o "$NAMERE"`
+	fname=${f#`echo "$f"|$GREP -o "$FILERE"`}
+	if $DEBUG; then
+		echo $folder
+		echo "	$fname"
+	else
+		mkdir -p "`echo "$f"|$GREP -o "$NAMERE"`"
+		mv "$f" "$folder/$fname"
+	fi
+done
+
+# Clean up
+popd

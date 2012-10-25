@@ -1,0 +1,33 @@
+#!/usr/bin/sh
+
+DEBUG=false
+
+# Make sure we have a valid directory
+if [[ ! -d "$1" ]]; then
+	echo "$0 requires a valid directory" 1>&2
+	exit 1
+fi
+
+# Enter the working directory
+pushd "$1"
+
+shopt -s nullglob
+for fold in *; do
+	if [ ! -d "$fold" ] ; then
+		continue;
+	fi
+	pushd "$fold"
+	find * -type f -print0 | while read -d $'\0' file
+	do
+		if $DEBUG; then
+			echo "mv \"$file\" \"../$fold - $file\""
+		else
+			mv "$file" "../$fold - $file"
+		fi
+	done
+	popd
+	rm -rf "$fold"
+done
+
+# Clean up
+popd

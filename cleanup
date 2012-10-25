@@ -1,0 +1,26 @@
+#!/usr/bin/python3
+
+import sys, os, shutil
+
+
+def main(argv):
+	if len(argv) != 2 or not os.path.isdir(argv[1]):
+		print("Invalid folder")
+		return
+
+	rmfiles = []
+	rmdirs = []
+	for root, dirs, files in os.walk(argv[1]):
+		rmfiles = [f
+					for f in files
+					if f.endswith(".pyc")
+					or "(" in f]
+		rmdirs=[d
+				for d in dirs
+				if "__pycache__" in d]
+		for d in rmdirs:
+			shutil.rmtree(os.path.join(root,d))
+			dirs.remove(d)
+
+if __name__== "__main__":
+	main(sys.argv)
