@@ -86,9 +86,13 @@ class Grader(Frame):
 		self.GradeButton.grid(row=row, column=1, sticky=N+S+E+W)
 		
 		# Print out the errors
+		scrollbar = Scrollbar(self.ErrorText)
+		scrollbar.pack(side='right', fill=Y)
 		# The +2 is for the "penalty" box set and the result pane
 		self.ErrorText = Text(self.master, width=80, height=(len(rules)+2))
-		self.ErrorText.pack(side='right', fill=BOTH, expand=YES)
+		self.ErrorText.pack(side='right', fill=BOTH)
+		self.ErrorText.config(yscrollcommand=scrollbar.set)
+		scrollbar.config(command=self.ErrorText.yview)
 		
 		# Make sure values are correct
 		self.reset()
@@ -119,7 +123,7 @@ class Grader(Frame):
 			if val != rule.max and rule.error.format(rule.max-val) not in errors:
 				errors.append(("-{0}: "+rule.error).format(rule.max-val))
 			total += val
-		self.ErrorText.insert("1.0","\n\n".join(errors))
+		self.ErrorText.insert("1.0","\n".join(errors))
 		self.GradeButton.config(text="Result: {}".format(total))
 
 	def reload(self):
@@ -133,7 +137,8 @@ class Grader(Frame):
 		Clears all output and resets scores to maximum
 		'''
 		for value, rule in self.rules:
-			val = rule.max
+			#val = rule.max
+			val=0
 			value.delete(0,END)
 			value.insert(0,val)
 		self.PenaltyInput.delete(0,END)
