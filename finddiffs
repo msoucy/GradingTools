@@ -90,9 +90,8 @@ def fixName(name):
 	'''
 	Convert names into CSV-friendly formats
 	'''
-	name = name.split("-")[0].strip()
-	name = " ".join([n.strip() for n in name.split(",")][::-1])
-	return name
+	return " ".join(reversed([n.strip()
+					for n in name.split("-")[0].strip().split(",")]))
 
 def flush(values, basedir, threshold):
 	'''
@@ -109,17 +108,17 @@ def flush(values, basedir, threshold):
 	f.write("\n".join(reversed(sorted("{0:1.5f},{1},{2}".format(*vals) for vals in values))))
 	f.close()
 
-def diffFolder(basedir, nostrip):
+def diffFolder(args):
 	'''
 	Make a diff report for `basedir`.
 	Will strip comments if `strip` is true
 	'''
 	olddir = os.getcwd()
-	os.chdir(basedir)
+	os.chdir(args.basedir)
 	values = diffcmp([f
 			for f in os.listdir(".")
-			if not f.endswith((".html",".htm",".zip"))],
-			nostrip)
+			if os.path.isdir(f)],
+			args.nostrip)
 	os.chdir(olddir)
 	return values
 
@@ -130,7 +129,7 @@ def main():
 	parser.add_argument('basedir', type=str, help='The folder to examine')
 	args = parser.parse_args()
 
-	values = diffFolder(args.basedir, args.nostrip)
+	values = diffFolder(args)
 	flush(values, args.basedir, args.threshold)
 
 if __name__ == "__main__":
