@@ -1,4 +1,7 @@
 #!/usr/bin/sh
+#
+# Moves submissions from student folders into one common directory
+#
 
 DEBUG=false
 

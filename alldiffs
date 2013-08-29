@@ -1,4 +1,7 @@
 #!/usr/bin/sh
+#
+# Convenience script for getting diff info for all assignments
+#
 
 for i in HW*;do
 	defolderize $i;

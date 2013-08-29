@@ -1,4 +1,19 @@
 #!/usr/bin/python3
+'''
+grade utility
+Provides a GUI for handling grading
+
+Based on a config file specified, will generate boxes to store the max number of points
+Config files contain a set of lines with the following, separated by tabs:
+- Maximum number of points
+- Short label
+- Error message to display if the student did not receive all points for a section
+
+This allows students to be graded on a common rubric (IE: 5% for style, 20% for using
+specific functionality, etc) and get common feedback.
+
+Pressing enter or the "Score:" button will update the right pane and the score
+'''
 
 import sys, os, argparse
 from tkinter import *

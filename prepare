@@ -1,4 +1,7 @@
 #!/usr/bin/sh
+#
+# Extracts all student submissions
+#
 
 DEBUG=false
 

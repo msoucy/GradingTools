@@ -1,4 +1,7 @@
 #!/usr/bin/sh
+#
+# Moves student submissions into folders based on name
+#
 
 DEBUG=false
 

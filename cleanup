@@ -1,28 +1,31 @@
 #!/usr/bin/python3
+'''
+cleanup utility
+Removes the following:
+- Compiled python files (pyc)
+- __pycache__ folders (python 3)
+- Files with a '(' in them. This removes older entries
+'''
 
 import sys, os, shutil
 
 
 def main(argv):
-	if len(argv) != 2 or not os.path.isdir(argv[1]):
-		print("Invalid folder")
-		return
+    if len(argv) != 2 or not os.path.isdir(argv[1]):
+        print("Invalid folder")
+        return
 
-	rmfiles = []
-	rmdirs = []
-	for root, dirs, files in os.walk(argv[1]):
-		rmfiles = [f
-					for f in files
-					if f.endswith(".pyc")
-					or "(" in f]
-		for f in rmfiles:
-			os.remove(os.path.join(root,f))
-		rmdirs=[d
-				for d in dirs
-				if "__pycache__" in d]
-		for d in rmdirs:
-			shutil.rmtree(os.path.join(root,d))
-			dirs.remove(d)
+    for root, dirs, files in os.walk(argv[1]):
+        for f in [f
+                  for f in files
+                  if f.endswith(".pyc")
+                  or "(" in f]:
+            os.remove(os.path.join(root,f))
+        for d in [d
+                  for d in dirs
+                  if "__pycache__" in d]:
+            shutil.rmtree(os.path.join(root,d))
+            dirs.remove(d)
 
 if __name__== "__main__":
-	main(sys.argv)
+    main(sys.argv)
