@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+
+import os, sys
+
+class Similarity(object):
+	__slots__ = ("name1","name2","scores")
+	def __init__(self, name1, name2):
+		self.name1, self.name2 = sorted((name1, name2))
+		self.scores=[]
+	def __str__(self):
+		total = sum(self.scores)
+		return "{0:.7},{1},{2}".format(total, self.name1, self.name2)
+	def addscore(self, score):
+		self.scores.append(score)
+
+class SimilarityTable(object):
+	__slots__ = ("names","similarities")
+	def __init__(self):
+		self.names=set()
+		self.similarities={}
+	def lookup(self, name1, name2):
+		name1, name2 = sorted((name1, name2))
+		self.names |= set((name1,name2))
+		return self.similarities.setdefault((name1,name2), Similarity(name1,name2))
+	def __str__(self):
+		return "\n".join(reversed(sorted(str(sim) for names, sim in self.similarities.items())))
+
+def gather(files):
+	table = SimilarityTable()
+	for filename in files:
+		csvname = os.path.splitext(filename)[0]
+		for line in open(filename):
+			score, name1, name2 = line.split(",")
+			name1,name2 = sorted((name1.strip(), name2.strip()))
+			table.lookup(name1,name2).addscore(float(score))
+	return table
+
+
+def flush(values):
+	# Flush to a file
+	f = open(os.path.abspath(os.path.join("diffreports","total.csv")),"w")
+	f.write(str(values))
+	f.close()
+
+def main():
+	sources = sorted([os.path.join("diffreports",f)
+		for f in os.listdir("diffreports")
+		if f.endswith((".csv"))
+		and f != "total.csv"])
+	values = gather(sources)
+	flush(values)
+
+if __name__ == "__main__":
+	main()
