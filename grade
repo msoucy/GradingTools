@@ -15,169 +15,179 @@ specific functionality, etc) and get common feedback.
 Pressing enter or the "Score:" button will update the right pane and the score
 '''
 
-import sys, os, argparse
+import sys
+import os
+import argparse
 from tkinter import *
 
+
 class Rule(object):
-	def __init__(self, line):
-		self.max, self.desc, self.error = line.split("\t")
-		self.max = int(self.max)
+
+    def __init__(self, line):
+        self.max, self.desc, self.error = line.split("\t")
+        self.max = int(self.max)
+
 
 def limit(low, val, high):
-	'''
-	limit : Float * Float * Float -> Float
-	Returns the middle argument, constrained to be at least the first argument
-		and at most the third argument
-	'''
-	return low if val < low else high if val > high else val
+    '''
+    limit : Float * Float * Float -> Float
+    Returns the middle argument, constrained to be at least the first argument
+            and at most the third argument
+    '''
+    return low if val < low else high if val > high else val
 
 # Gui for inputting variables
+
+
 class Grader(Frame):
-	def __init__(self, Master, rulefile):
-		'''
-		Creates all of the buttons and boxes for the GUI based on the rules provided
-		'''
-		# Get the root window
-		self.master = Master
-		self.InputPane = None
-		self.ErrorText = None
-		self.rulefile = rulefile
 
-		self.build(self.prepare(rulefile))
+    def __init__(self, Master, rulefile):
+        '''
+        Creates all of the buttons and boxes for the GUI based on the rules provided
+        '''
+        # Get the root window
+        self.master = Master
+        self.InputPane = None
+        self.ErrorText = None
+        self.rulefile = rulefile
 
-	def build(self, rules=[]):
+        self.build(self.prepare(rulefile))
 
-		# Clean up if we're rebuilding
-		if self.InputPane != None:
-			self.InputPane.destroy()
-			self.InputPane = None
-		if self.ErrorText != None:
-			self.ErrorText.destroy()
-			self.ErrorText = None
-		
-		
-		# The left pane, detailing the inputs
-		self.InputPane = Frame(self.master)
-		self.InputPane.pack(side='left')
-		self.rules = []
+    def build(self, rules=[]):
 
-		row = 0
-		
-		for rule in rules:
-			# Make a pane for each rule
-			Description = Label(self.InputPane,text=rule.desc)
-			Description.grid(row=row,column=0)
-			GradeInput = Entry(self.InputPane)
-			GradeInput.bind("<Return>",lambda event:self.recalculate())
-			GradeInput.bind("<KP_Enter>",lambda event:self.recalculate())
-			GradeInput.grid(row=row,column=1)
-			Maximum = Label(self.InputPane,text="/{0}".format(rule.max))
-			Maximum.grid(row=row,column=2)
-			self.rules.append((GradeInput, rule))
-			row += 1
-		
-		# Assorted deductions
-		Description = Label(self.InputPane,text="Penalty")
-		Description.grid(row=row, column=0)
-		self.PenaltyInput = Entry(self.InputPane)
-		self.PenaltyInput.bind("<Return>",lambda event:self.recalculate())
-		self.PenaltyInput.bind("<KP_Enter>",lambda event:self.recalculate())
-		self.PenaltyInput.grid(row=row, column=1)
-		row += 1
+        # Clean up if we're rebuilding
+        if self.InputPane != None:
+            self.InputPane.destroy()
+            self.InputPane = None
+        if self.ErrorText != None:
+            self.ErrorText.destroy()
+            self.ErrorText = None
 
-		# Buttons
-		ButtonFrame = Frame(self.InputPane)
-		ButtonFrame.grid(row=row, column=0)
-		# Reload the rules
-		self.Reloader = Button(ButtonFrame, text='Reload', command=self.reload)
-		self.Reloader.grid(row=0, column=0, sticky=N+S+E+W)
-		# Reset the scores
-		self.Resetter = Button(ButtonFrame, text='Reset', command=self.reset)
-		self.Resetter.grid(row=0, column=1, sticky=N+S+E+W)
-		
-		# This one will change to show the final grade
-		# Do the actual recalculation
-		self.GradeButton = Button(self.InputPane, text='Result: ', command=self.recalculate)
-		self.GradeButton.grid(row=row, column=1, sticky=N+S+E+W)
-		
-		# Print out the errors
-		scrollbar = Scrollbar(self.ErrorText)
-		scrollbar.pack(side='right', fill=Y)
-		# The +2 is for the "penalty" box set and the result pane
-		self.ErrorText = Text(self.master, width=80, height=(len(rules)+2))
-		self.ErrorText.pack(side='right', fill=BOTH)
-		self.ErrorText.config(yscrollcommand=scrollbar.set)
-		scrollbar.config(command=self.ErrorText.yview)
-		
-		# Make sure values are correct
-		self.reset()
+        # The left pane, detailing the inputs
+        self.InputPane = Frame(self.master)
+        self.InputPane.pack(side='left')
+        self.rules = []
 
-	def prepare(self, rname):
-		'''
-		prepare : string -> Rule[]
-		Precondition: rname is a valid rule filename
-		'''
-		return [Rule(line.strip())
-				for line in open(os.path.join(rulePathName(rname))).read().split("\n")
-				if line.strip() and not line.startswith("#")]
-	
-	def recalculate(self):
-		'''
-		Recalculate and display the total score and text given by the scores
-		'''
-		total = -abs(int(self.PenaltyInput.get() or 0))
-		self.PenaltyInput.delete(0,"end")
-		self.PenaltyInput.insert(0,-total)
-		
-		self.ErrorText.delete("1.0",END)
-		errors = []
-		for value, rule in self.rules:
-			val = limit(0,int(value.get() or 0),rule.max)
-			value.delete(0,"end")
-			value.insert(0,val)
-			if val != rule.max and rule.error.format(rule.max-val) not in errors:
-				errors.append(("-{0}: "+rule.error).format(rule.max-val))
-			total += val
-		self.ErrorText.insert("1.0","\n".join(errors))
-		self.GradeButton.config(text="Result: {}".format(total))
+        row = 0
 
-	def reload(self):
-		'''
-		Reloads the ruleset
-		'''
-		self.build(self.prepare(self.rulefile))
-	
-	def reset(self):
-		'''
-		Clears all output and resets scores to maximum
-		'''
-		for value, rule in self.rules:
-			#val = rule.max
-			val=0
-			value.delete(0,END)
-			value.insert(0,val)
-		self.PenaltyInput.delete(0,END)
-		self.PenaltyInput.insert(0,0)
-		self.recalculate()
+        for rule in rules:
+            # Make a pane for each rule
+            Description = Label(self.InputPane, text=rule.desc)
+            Description.grid(row=row, column=0)
+            GradeInput = Entry(self.InputPane)
+            GradeInput.bind("<Return>", lambda event: self.recalculate())
+            GradeInput.bind("<KP_Enter>", lambda event: self.recalculate())
+            GradeInput.grid(row=row, column=1)
+            Maximum = Label(self.InputPane, text="/{0}".format(rule.max))
+            Maximum.grid(row=row, column=2)
+            self.rules.append((GradeInput, rule))
+            row += 1
+
+        # Assorted deductions
+        Description = Label(self.InputPane, text="Penalty")
+        Description.grid(row=row, column=0)
+        self.PenaltyInput = Entry(self.InputPane)
+        self.PenaltyInput.bind("<Return>", lambda event: self.recalculate())
+        self.PenaltyInput.bind("<KP_Enter>", lambda event: self.recalculate())
+        self.PenaltyInput.grid(row=row, column=1)
+        row += 1
+
+        # Buttons
+        ButtonFrame = Frame(self.InputPane)
+        ButtonFrame.grid(row=row, column=0)
+        # Reload the rules
+        self.Reloader = Button(ButtonFrame, text='Reload', command=self.reload)
+        self.Reloader.grid(row=0, column=0, sticky=N + S + E + W)
+        # Reset the scores
+        self.Resetter = Button(ButtonFrame, text='Reset', command=self.reset)
+        self.Resetter.grid(row=0, column=1, sticky=N + S + E + W)
+
+        # This one will change to show the final grade
+        # Do the actual recalculation
+        self.GradeButton = Button(
+            self.InputPane, text='Result: ', command=self.recalculate)
+        self.GradeButton.grid(row=row, column=1, sticky=N + S + E + W)
+
+        # Print out the errors
+        scrollbar = Scrollbar(self.ErrorText)
+        scrollbar.pack(side='right', fill=Y)
+        # The +2 is for the "penalty" box set and the result pane
+        self.ErrorText = Text(self.master, width=80, height=(len(rules) + 2))
+        self.ErrorText.pack(side='right', fill=BOTH)
+        self.ErrorText.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=self.ErrorText.yview)
+
+        # Make sure values are correct
+        self.reset()
+
+    def prepare(self, rname):
+        '''
+        prepare : string -> Rule[]
+        Precondition: rname is a valid rule filename
+        '''
+        return [Rule(line.strip())
+                for line in open(os.path.join(rulePathName(rname))).read().split("\n")
+                if line.strip() and not line.startswith("#")]
+
+    def recalculate(self):
+        '''
+        Recalculate and display the total score and text given by the scores
+        '''
+        total = -abs(int(self.PenaltyInput.get() or 0))
+        self.PenaltyInput.delete(0, "end")
+        self.PenaltyInput.insert(0, -total)
+
+        self.ErrorText.delete("1.0", END)
+        errors = []
+        for value, rule in self.rules:
+            val = limit(0, int(value.get() or 0), rule.max)
+            value.delete(0, "end")
+            value.insert(0, val)
+            if val != rule.max and rule.error.format(rule.max - val) not in errors:
+                errors.append(("-{0}: " + rule.error).format(rule.max - val))
+            total += val
+        self.ErrorText.insert("1.0", "\n".join(errors))
+        self.GradeButton.config(text="Result: {}".format(total))
+
+    def reload(self):
+        '''
+        Reloads the ruleset
+        '''
+        self.build(self.prepare(self.rulefile))
+
+    def reset(self):
+        '''
+        Clears all output and resets scores to maximum
+        '''
+        for value, rule in self.rules:
+            #val = rule.max
+            val = 0
+            value.delete(0, END)
+            value.insert(0, val)
+        self.PenaltyInput.delete(0, END)
+        self.PenaltyInput.insert(0, 0)
+        self.recalculate()
+
 
 def rulePathName(base):
-	'''
-	rulePathName : string -> string
-	Returns the base name transformed into the path for rule data for that assignment
-	'''
-	return os.path.join("rules",
-		base if base.endswith(".txt") else base+".txt")
+    '''
+    rulePathName : string -> string
+    Returns the base name transformed into the path for rule data for that assignment
+    '''
+    return os.path.join("rules",
+                        base if base.endswith(".txt") else base + ".txt")
+
 
 def main():
-	parser = argparse.ArgumentParser(description='Create a GRADE GUI for an assignment.')
-	parser.add_argument('basedir', type=str, help='The assignment to grade')
-	args = parser.parse_args()
-	
-	root = Tk()
-	root.title('Grader')
-	app = Grader(root,args.basedir)
-	root.mainloop()	
+    parser = argparse.ArgumentParser(
+        description='Create a GRADE GUI for an assignment.')
+    parser.add_argument('basedir', type=str, help='The assignment to grade')
+    args = parser.parse_args()
+
+    root = Tk()
+    root.title('Grader')
+    app = Grader(root, args.basedir)
+    root.mainloop()
 
 if __name__ == "__main__":
-	main()
-
+    main()

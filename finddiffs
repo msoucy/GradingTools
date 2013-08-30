@@ -4,133 +4,152 @@ finddiffs
 Author: Matthew Soucy (mas5997@rit.edu)
 '''
 
-import difflib, os, sys, argparse
+import difflib
+import os
+import sys
+import argparse
+
 
 def remove_comments_and_docstrings(source):
-	"""
-	Returns Python 'source' minus comments and docstrings.
-	Modified for python3 from:
-	http://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
-	"""
-	import tokenize, io
-	out = ""
-	prev_toktype = tokenize.INDENT
-	last_lineno = -1
-	last_col = 0
-	for tok in tokenize.tokenize(io.BytesIO(source.encode("utf-8")).readline):
-		token_type, token_string, (start_line, start_col), (end_line, end_col), ltext = tok
-		# The following two conditionals preserve indentation.
-		# This is necessary because we're not using tokenize.untokenize()
-		# (because it spits out code with copious amounts of oddly-placed
-		# whitespace).
-		if start_line > last_lineno: last_col = 0
-		if start_col > last_col: out += (" " * (start_col - last_col))
-		# Remove comments:
-		if token_type == tokenize.COMMENT: pass
-		# This series of conditionals removes docstrings:
-		elif token_type == tokenize.STRING:
-			if prev_toktype != tokenize.INDENT:
-				# This is likely a docstring; double-check we're not inside an operator:
-				if prev_toktype != tokenize.NEWLINE:
-					# Note regarding NEWLINE vs NL: The tokenize module
-					# differentiates between newlines that start a new statement
-					# and newlines inside of operators such as parens, brackes,
-					# and curly braces.  Newlines inside of operators are
-					# NEWLINE and newlines that start new code are NL.
-					# Catch whole-module docstrings:
-					if start_col > 0:
-						# Unlabelled indentation means we're inside an operator
-						out += token_string
-					# Note regarding the INDENT token: The tokenize module does
-					# not label indentation inside of an operator (parens,
-					# brackets, and curly braces) as actual indentation.
-					# For example:
-					# def foo():
-					#	 "The spaces before this docstring are tokenize.INDENT"
-					#	 test = [
-					#		 "The spaces before this string do not get a token"
-					#	 ]
-		else:
-			out += token_string
-		prev_toktype = token_type
-		last_col = end_col
-		last_lineno = end_line
-	return out
+    """
+    Returns Python 'source' minus comments and docstrings.
+    Modified for python3 from:
+    http://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
+    """
+    import tokenize
+    import io
+    out = ""
+    prev_toktype = tokenize.INDENT
+    last_lineno = -1
+    last_col = 0
+    for tok in tokenize.tokenize(io.BytesIO(source.encode("utf-8")).readline):
+        token_type, token_string, (start_line, start_col), (
+            end_line, end_col), ltext = tok
+        # The following two conditionals preserve indentation.
+        # This is necessary because we're not using tokenize.untokenize()
+        # (because it spits out code with copious amounts of oddly-placed
+        # whitespace).
+        if start_line > last_lineno:
+            last_col = 0
+        if start_col > last_col:
+            out += (" " * (start_col - last_col))
+        # Remove comments:
+        if token_type == tokenize.COMMENT:
+            pass
+        # This series of conditionals removes docstrings:
+        elif token_type == tokenize.STRING:
+            if prev_toktype != tokenize.INDENT:
+                # This is likely a docstring; double-check we're not inside an
+                # operator:
+                if prev_toktype != tokenize.NEWLINE:
+                    # Note regarding NEWLINE vs NL: The tokenize module
+                    # differentiates between newlines that start a new statement
+                    # and newlines inside of operators such as parens, brackes,
+                    # and curly braces.  Newlines inside of operators are
+                    # NEWLINE and newlines that start new code are NL.
+                    # Catch whole-module docstrings:
+                    if start_col > 0:
+                        # Unlabelled indentation means we're inside an operator
+                        out += token_string
+                    # Note regarding the INDENT token: The tokenize module does
+                    # not label indentation inside of an operator (parens,
+                    # brackets, and curly braces) as actual indentation.
+                    # For example:
+                    # def foo():
+                    #	 "The spaces before this docstring are tokenize.INDENT"
+                    #	 test = [
+                    #		 "The spaces before this string do not get a token"
+                    #	 ]
+        else:
+            out += token_string
+        prev_toktype = token_type
+        last_col = end_col
+        last_lineno = end_line
+    return out
+
 
 def diffcmp(files, nostrip):
-	'''
-	For a list of files, compare each one with each other one.
-	Return the list of diffs
-	'''
-		
-	def sanitize(raw):
-		''' Filter the file '''
-		if nostrip:
-			# Retain comments
-			return "\n".join(line
-							for line in raw.replace("\r","").split("\n")
-							if line.strip())
-		else:
-			# Remove comments
-			return "\n".join(line
-							for line in remove_comments_and_docstrings(raw.replace("\r","")).split("\n")
-							if line.strip())
+    '''
+    For a list of files, compare each one with each other one.
+    Return the list of diffs
+    '''
 
-	s = difflib.SequenceMatcher()
-	differences = {}
-	for f1 in files:
-		s.set_seq2(sanitize(open(f1).read()))
-		for f2 in files:
-			if f1 == f2 or (f2,f1) in differences: continue
-			s.set_seq1(sanitize(open(f2).read()))
-			differences[tuple(sorted((f1,f2)))] = s.ratio()
-	return differences
+    def sanitize(raw):
+        ''' Filter the file '''
+        if nostrip:
+            # Retain comments
+            return "\n".join(line
+                             for line in raw.replace("\r", "").split("\n")
+                             if line.strip())
+        else:
+            # Remove comments
+            return "\n".join(line
+                             for line in remove_comments_and_docstrings(raw.replace("\r", "")).split("\n")
+                             if line.strip())
+
+    s = difflib.SequenceMatcher()
+    differences = {}
+    for f1 in files:
+        s.set_seq2(sanitize(open(f1).read()))
+        for f2 in files:
+            if f1 == f2 or (f2, f1) in differences:
+                continue
+            s.set_seq1(sanitize(open(f2).read()))
+            differences[tuple(sorted((f1, f2)))] = s.ratio()
+    return differences
+
 
 def fixName(name):
-	'''
-	Convert names into CSV-friendly formats
-	'''
-	return " ".join(reversed([n.strip()
-					for n in name.split("-")[0].strip().split(",")]))
+    '''
+    Convert names into CSV-friendly formats
+    '''
+    return " ".join(reversed([n.strip()
+                              for n in name.split("-")[0].strip().split(",")]))
+
 
 def flush(values, basedir, threshold):
-	'''
-	Flush the generated diff reports to a file
-	'''
-	if "diffreports" not in os.listdir('.'):
-		os.mkdir("diffreports")
-	f = open(os.path.abspath(os.path.join("diffreports", basedir+".csv")),"w")
-	values = [(sim, fixName(names[0]), fixName(names[1]))
-				for names, sim in values.items()
-				if fixName(names[0]) != fixName(names[1])
-				and sim > threshold
-				]
-	f.write("\n".join(reversed(sorted("{0:1.5f},{1},{2}".format(*vals) for vals in values))))
-	f.close()
+    '''
+    Flush the generated diff reports to a file
+    '''
+    if "diffreports" not in os.listdir('.'):
+        os.mkdir("diffreports")
+    f = open(
+        os.path.abspath(os.path.join("diffreports", basedir + ".csv")), "w")
+    values = [(sim, fixName(names[0]), fixName(names[1]))
+              for names, sim in values.items()
+              if fixName(names[0]) != fixName(names[1])
+              and sim > threshold
+              ]
+    f.write(
+        "\n".join(reversed(sorted("{0:1.5f},{1},{2}".format(*vals) for vals in values))))
+    f.close()
+
 
 def diffFolder(args):
-	'''
-	Make a diff report for `basedir`.
-	Will strip comments if `strip` is true
-	'''
-	olddir = os.getcwd()
-	os.chdir(args.basedir)
-	values = diffcmp([f
-			for f in os.listdir(".")
-			if os.path.isdir(f)],
-			args.nostrip)
-	os.chdir(olddir)
-	return values
+    '''
+    Make a diff report for `basedir`.
+    Will strip comments if `strip` is true
+    '''
+    olddir = os.getcwd()
+    os.chdir(args.basedir)
+    values = diffcmp(
+        [f for f in os.listdir(".") if os.path.isdir(f)], args.nostrip)
+    os.chdir(olddir)
+    return values
+
 
 def main():
-	parser = argparse.ArgumentParser(description='Get a difference comparison of all files in a directory.')
-	parser.add_argument('-t', '--threshold', type=float, help='The threshold of values to output', default=0.0)
-	parser.add_argument('-n', '--nostrip', help='Do not remove comments before evaluating', action="store_true")
-	parser.add_argument('basedir', type=str, help='The folder to examine')
-	args = parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description='Get a difference comparison of all files in a directory.')
+    parser.add_argument('-t', '--threshold', type=float,
+                        help='The threshold of values to output', default=0.0)
+    parser.add_argument(
+        '-n', '--nostrip', help='Do not remove comments before evaluating', action="store_true")
+    parser.add_argument('basedir', type=str, help='The folder to examine')
+    args = parser.parse_args()
 
-	values = diffFolder(args)
-	flush(values, args.basedir, args.threshold)
+    values = diffFolder(args)
+    flush(values, args.basedir, args.threshold)
 
 if __name__ == "__main__":
-	main()
+    main()

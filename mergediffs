@@ -1,19 +1,29 @@
 #!/usr/bin/python3
 
-import os, sys
+import os
+import sys
+
 
 class Similarity(object):
-	__slots__ = ("name1","name2","scores")
+
+	__slots__ = ("name1", "name2", "scores")
+
 	def __init__(self, name1, name2):
 		self.name1, self.name2 = sorted((name1, name2))
-		self.scores=[]
+		self.scores = []
+
 	def __str__(self):
 		total = sum(self.scores)
 		return "{0:.7},{1},{2}".format(total, self.name1, self.name2)
+
+    def __lt__(self, other):
+        return sum(self.scores) < sum(other.diffs)
+
 	def addscore(self, score):
 		self.scores.append(score)
 
 class SimilarityTable(object):
+
 	__slots__ = ("names","similarities")
 	def __init__(self):
 		self.names=set()
@@ -23,7 +33,7 @@ class SimilarityTable(object):
 		self.names |= set((name1,name2))
 		return self.similarities.setdefault((name1,name2), Similarity(name1,name2))
 	def __str__(self):
-		return "\n".join(reversed(sorted(str(sim) for names, sim in self.similarities.items())))
+		return "\n".join(sorted(str(sim) for names, sim in self.similarities.items(), reverse=False))
 
 def gather(files):
 	table = SimilarityTable()
@@ -38,9 +48,8 @@ def gather(files):
 
 def flush(values):
 	# Flush to a file
-	f = open(os.path.abspath(os.path.join("diffreports","total.csv")),"w")
-	f.write(str(values))
-	f.close()
+	with open(os.path.abspath(os.path.join("diffreports","total.csv")),"w") as f:
+    	f.write(str(values))
 
 def main():
 	sources = sorted([os.path.join("diffreports",f)
@@ -52,3 +61,4 @@ def main():
 
 if __name__ == "__main__":
 	main()
+
