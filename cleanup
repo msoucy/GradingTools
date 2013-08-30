@@ -1,31 +1,56 @@
 #!/usr/bin/python3
 '''
 cleanup utility
-Removes the following:
-- Compiled python files (pyc)
-- __pycache__ folders (python 3)
-- Files with a '(' in them. This removes older entries
 '''
 
-import sys, os, shutil
+import sys
+import os
+import shutil
+import argparse
+
+FILE = "file"
+DIR = "dir"
+
+ALWAYS_FALSE = lambda f: False
+
+languages = {
+    'c++': {
+        FILE: ALWAYS_FALSE,
+        DIR:  ALWAYS_FALSE
+    },
+    'python': {
+        FILE: (lambda f: f.endswith(".pyc") or "(" in f),
+        DIR:  (lambda d: "__pycache__" in d)
+    }
+}
 
 
-def main(argv):
-    if len(argv) != 2 or not os.path.isdir(argv[1]):
-        print("Invalid folder")
-        return
+def clean_dir(args):
 
-    for root, dirs, files in os.walk(argv[1]):
-        for f in [f
-                  for f in files
-                  if f.endswith(".pyc")
-                  or "(" in f]:
-            os.remove(os.path.join(root,f))
-        for d in [d
-                  for d in dirs
-                  if "__pycache__" in d]:
-            shutil.rmtree(os.path.join(root,d))
+    filefunc = languages[args.language][FILE]
+    dirfunc = languages[args.language][DIR]
+
+    for root, dirs, files in os.walk(args.directory):
+        for f in [f for f in files if filefunc(f)]:
+            os.remove(os.path.join(root, f))
+            files.remove(f)
+        for d in [d for d in dirs if dirfunc(d)]:
+            shutil.rmtree(os.path.join(root, d))
             dirs.remove(d)
 
-if __name__== "__main__":
-    main(sys.argv)
+
+def parse_args(args):
+    parser = argparse.ArgumentParser(description='Clean up intermediary files')
+    parser.add_argument(
+        'directory', type=str, help='The root directory to clean')
+    parser.add_argument(
+        '--language', '-l', help='The language to clean up after',
+        choices=languages.keys(), default='python')
+    return parser.parse_args(args)
+
+
+def main():
+    clean_dir(parse_args(sys.argv))
+
+if __name__ == "__main__":
+    main()
