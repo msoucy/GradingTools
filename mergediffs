@@ -25,24 +25,30 @@ class Similarity(object):
 class SimilarityTable(object):
 
 	__slots__ = ("names","similarities")
+
 	def __init__(self):
 		self.names=set()
 		self.similarities={}
+
 	def lookup(self, name1, name2):
 		name1, name2 = sorted((name1, name2))
 		self.names |= set((name1,name2))
 		return self.similarities.setdefault((name1,name2), Similarity(name1,name2))
+
 	def __str__(self):
 		return "\n".join(sorted(str(sim) for names, sim in self.similarities.items(), reverse=False))
 
 def gather(files):
+
 	table = SimilarityTable()
+
 	for filename in files:
 		csvname = os.path.splitext(filename)[0]
 		for line in open(filename):
 			score, name1, name2 = line.split(",")
 			name1,name2 = sorted((name1.strip(), name2.strip()))
 			table.lookup(name1,name2).addscore(float(score))
+
 	return table
 
 

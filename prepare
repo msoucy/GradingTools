@@ -16,9 +16,11 @@ pushd "$1"
 
 shopt -s nullglob
 for fold in *; do
+	# Don't do anything to files, just folders
 	if [ ! -d "$fold" ] ; then
 		continue;
 	fi
+	# Enter that directory
 	pushd "$fold"
 	find * -type f -print0 | while read -d $'\0' file
 	do
