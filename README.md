@@ -8,10 +8,10 @@ Workflow:
 	unzip mycourses_dump.zip
 	# Remove the old versions
 	cleanup .
-	# Unzip each zip into the base files
-	prepare .
 	# Move each student's files into a directory for that student
 	folderize .
+	# Unzip each zip into the base files
+	prepare .
 	# Create a config for the grading GUI
 	cd ..
 	mkdir -p rules
